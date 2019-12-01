@@ -46,7 +46,9 @@ doStack2nix :: Args -> IO ()
 doStack2nix args = do
   let pkgsNix = argOutputDir args </> "pkgs.nix"
       defaultNix = argOutputDir args </> "default.nix"
+  putStrLn "Hhhhhhhhhhhhhhhhhhhhhhhhhhhhhheeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeerrrrrrrrrrrrrrrrrrrrrrrrrrrrreeeeeeeeeeeeeeeeeee 1111111111111111111111"
   pkgs <- stackexpr args
+  putStrLn "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFFFFFFFFFFFFFFFFFFFFFFFFFFFTTTTTTTTTTTTTTTTTTTTTTTTTEEEEEEEEEEEEEEEEEEEEERRRRRRRRRRRRRRR 1111111111111111111111"
   writeDoc pkgsNix (prettyNix pkgs)
   unlessM (doesFileExist defaultNix) $ do
     writeFile defaultNix defaultNixContents
@@ -70,7 +72,9 @@ stack2nix args stack@(Stack resolver compiler pkgs pkgFlags ghcOpts) =
          _isFunction_ = mkSym "isFunction"
          _mapAttrs_   = mkSym "mapAttrs"
          _config_     = mkSym "config"
+     putStrLn "##################################################################################### in stack2nix..."
      packages <- packages2nix args pkgs
+     putStrLn "##################################################################################### in stack2nix, after packages2nix..."
      return . mkNonRecSet $
        [ "extras" $= ("hackage" ==> mkNonRecSet
                      ([ "packages" $= mkNonRecSet (extraDeps <> packages) ]
@@ -140,9 +144,11 @@ writeDoc file doc =
 packages2nix :: Args -> [Dependency] -> IO [Binding NExpr]
 packages2nix args pkgs =
   do cwd <- getCurrentDirectory
+     putStrLn "##################################################################################### in packages2nix..."
      fmap concat . forM pkgs $ \case
        (LocalPath folder) ->
          do cabalFiles <- findCabalFiles (argHpackUse args) (dropFileName (argStackYaml args) </> folder)
+            putStrLn "##################################################################################### in packages2nix, in LocalPath branch..."
             forM cabalFiles $ \cabalFile ->
               let pkg = cabalFilePkgName cabalFile
                   nix = pkg <.> "nix"
@@ -154,14 +160,25 @@ packages2nix args pkgs =
                     return $ fromString pkg $= mkPath False nix
        (DVCS (Git url rev) subdirs) ->
          fmap concat . forM subdirs $ \subdir ->
-         do cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
+         do
+            putStrLn "##################################################################################### in packages2nix, in DVCS branch..."
+            cacheHits <- liftIO $ cacheHits (argCacheFile args) url rev subdir
+            putStrLn "##################################################################################### in packages2nix, in DVCS branch, after cacheHits..."
+            putStrLn $ "###################### in packages2nix, in DVCS branch, after cacheHits, args: " <> show args
+            putStrLn $ "###################### in packages2nix, in DVCS branch, after cacheHits, url: " <> show url
+            putStrLn $ "###################### in packages2nix, in DVCS branch, after cacheHits, rev: " <> show rev
+            putStrLn $ "###################### in packages2nix, in DVCS branch, after cacheHits, subdir: " <> show subdir
             case cacheHits of
               [] -> do
-                fetch (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
-                  (Source url rev UnknownHash subdir) >>= \case
-                  (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
-                  _ -> return []
-              hits ->
+                putStrLn "##################################################################################### in packages2nix, in DVCS branch, no cache hits..."
+                fetch
+                  (\dir -> cabalFromPath url rev subdir $ dir </> subdir)
+                  (Source url rev UnknownHash subdir)
+                  >>= \case
+                    (Just (DerivationSource{..}, genBindings)) -> genBindings derivHash
+                    _ -> return []
+              hits -> do
+                putStrLn "##################################################################################### in packages2nix, in DVCS branch, got some hits..."
                 forM hits $ \( pkg, nix ) -> do
                   return $ fromString pkg $= mkPath False nix
        _ -> return []

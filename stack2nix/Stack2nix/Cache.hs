@@ -25,11 +25,19 @@ appendCache f url rev subdir sha256 pkgname exprPath = do
 
 cacheHits :: FilePath -> String -> String -> String -> IO [ (String, String) ]
 cacheHits f url rev subdir
-  = do cache <- catch' (readCache f) (const (pure []))
-       return [ ( pkgname, exprPath )
+  = do
+       -- putStrLn $ "###################### in cacheHits..." <> show rev
+       putStrLn $ "###################### in cacheHits..."
+       rawCacheFile <- readFile f
+       putStrLn $ "###################### in cacheHits, raw cache file: " <> rawCacheFile
+       cache <- catch' (readCache f) (const (pure []))
+       putStrLn $ "###################### in cacheHits, cache: " <> show cache
+       let res = [ ( pkgname, exprPath )
               | ( url', rev', subdir', sha256, pkgname, exprPath ) <- cache
               , url == url'
               , rev == rev'
               , subdir == subdir' ]
+       putStrLn $ "###################### in cacheHits, res: " <> show res
+       return res
   where catch' :: IO a -> (SomeException -> IO a) -> IO a
         catch' = catch

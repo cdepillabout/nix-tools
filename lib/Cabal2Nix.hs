@@ -220,7 +220,7 @@ instance ToNixExpr Src where
   toNix (Path p) = mkRecSet [ "src" $= applyMkDefault (mkRelPath p) ]
   toNix (Git url rev mbSha256 mbPath)
     = mkNonRecSet $
-      [ "src" $= applyMkDefault (mkSym pkgs @. "fetchgit" @@ mkNonRecSet
+      [ "src" $= applyMkDefault (mkSym pkgs @. "builtins.fetchGit" @@ mkNonRecSet
         [ "url"    $= mkStr (fromString url)
         , "rev"    $= mkStr (fromString rev)
         , "sha256" $= case mbSha256 of
